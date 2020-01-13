@@ -6,7 +6,7 @@ class db
   private $dbHost = 'localhost';
   private $dbUser = 'postgres';
   private $dbPass = 'postgres';
-  private $dbport = '5433';
+  private $dbport = '5432';
   private $dbName = 'project_granja';
   //conección 
   public function conectDB()
