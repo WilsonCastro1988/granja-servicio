@@ -1289,7 +1289,7 @@ function login($request, $response)
 		$db = $db->conectDB();
 		$userData = '';
 
-		$sql = "SELECT empleado.username, empleado.nombre,empleado.apellido, tipo_usuario.tipo_usuario AS id_tipo_usuario FROM tipo_usuario
+		$sql = "SELECT empleado.id_empleado, empleado.username, empleado.nombre,empleado.apellido, tipo_usuario.tipo_usuario AS id_tipo_usuario FROM tipo_usuario
 		JOIN empleado ON (tipo_usuario.id_tipo_usuario = empleado.id_tipo_usuario) WHERE username=? and password=?";
 		$stmt = $db->prepare($sql);
 		//$stmt->bindParam("username", $username, PDO::PARAM_STR);
@@ -1310,6 +1310,78 @@ function login($request, $response)
 			echo '{"error":{"text":"Error al ingresar usuario o password"}}';
 		}
 	} catch (Exception $e) {
-		echo '{"error":{"text pero que mierdas":' . $e->getMessage() . '}}';
+		echo '{"error":{"text pero un errro":' . $e->getMessage() . '}}';
 	}
 }
+
+//servicios para factura
+$app->post('/addFactura', function ($request, $response) {
+	try {
+		$data = $request->getParams();
+		$db = new db();
+		$db = $db->conectDB();
+		$sth = $db->prepare("INSERT INTO factura(
+            					id_empleado, id_cliente, fecha, precio_total)
+    								VALUES (?, ?, ?, ?)");
+
+		$sth->execute(array($data["id_empleado"], $data["id_cliente"], $data["fecha"], $data["precio_total"]));
+
+
+		$sth = $db->prepare("SELECT * FROM factura WHERE id_cliente = :id_cliente and id_empleado = :id_empleado and fecha = :fecha and precio_total = :precio_total");
+		$sth->bindParam(":id_cliente",  $data["id_cliente"], PDO::PARAM_INT);
+		$sth->bindParam(":id_empleado",  $data["id_empleado"], PDO::PARAM_INT);
+		$sth->bindParam(":fecha",  $data["fecha"]);
+		$sth->bindParam(":precio_total",  $data["precio_total"]);
+		$sth->execute();
+
+
+
+		$facturaData = $sth->fetch(PDO::FETCH_OBJ);
+		$userData = json_encode($facturaData);
+		$response = $response->write($userData);
+	} catch (PDOException $e) {
+		$response->write('{"error":{"texto":' . $e->getMessage() . '}}');
+	}
+
+	return $response;
+});
+
+
+//servicios para factura
+$app->post('/addDetalleFactura', function ($request, $response) {
+	try {
+		$data = $request->getParams();
+		$db = new db();
+		$db = $db->conectDB();
+		$sth = $db->prepare("INSERT INTO detalle_venta(
+            					id_factura, id_arete, cantidad, p_unitario, p_total)
+    									VALUES (?, ?, ?, ?, ?)");
+
+		$sth->execute(array($data["id_factura"], $data["id_arete"], $data["cantidad"], $data["p_unitario"], $data["p_total"]));
+		$detalleFacturaData = $sth->fetch(PDO::FETCH_ASSOC);
+		$response = $response->withJson($detalleFacturaData);
+	} catch (PDOException $e) {
+		$response->write('{"error":{"texto":' . $e->getMessage() . '}}');
+	}
+
+	return $response;
+});
+
+
+$app->get('/getFacturas', function ($request, $response, $args) {
+	try {
+		$db = new db();
+		$db = $db->conectDB();
+		$sth = $db->prepare("SELECT * FROM fatura");
+		$sth->execute();
+		$facturas = $sth->fetchAll(PDO::FETCH_ASSOC);
+		if ($facturas) {
+			$response = $response->withJson($facturas);
+			$db = null;
+		}
+	} catch (PDOException $e) {
+		$response->write('{"error":{"texto":' . $e->getMessage() . '}}');
+	}
+
+	return $response;
+});
