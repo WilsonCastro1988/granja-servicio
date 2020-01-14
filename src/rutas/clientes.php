@@ -1372,7 +1372,7 @@ $app->get('/getFacturas', function ($request, $response, $args) {
 	try {
 		$db = new db();
 		$db = $db->conectDB();
-		$sth = $db->prepare("SELECT * FROM fatura");
+		$sth = $db->prepare("SELECT * FROM factura");
 		$sth->execute();
 		$facturas = $sth->fetchAll(PDO::FETCH_ASSOC);
 		if ($facturas) {
@@ -1381,6 +1381,32 @@ $app->get('/getFacturas', function ($request, $response, $args) {
 		}
 	} catch (PDOException $e) {
 		$response->write('{"error":{"texto":' . $e->getMessage() . '}}');
+	}
+
+	return $response;
+});
+
+$app->get('/getDetalleByFactura/{idFactura}', function ($request, $response, $args) {
+	$cedula = $args["idFactura"];
+	try {
+		$db = new db();
+		$db = $db->conectDB();
+		$sth = $db->prepare("select * from detalle_venta dv, factura f, animal a 
+		where dv.id_factura=f.id_factura and dv.id_arete=a.id_arete and  f.id_factura =:id_factura");
+		$sth->bindParam(":id_factura",  $args["idFactura"], PDO::PARAM_INT);
+		$sth->execute();
+		$detalle = $sth->fetchAll(PDO::FETCH_ASSOC);
+		if ($detalle) {
+			$response = $response->withJson($detalle);
+			$db = null;
+		}
+		if (count($detalle) == 0) {
+			$mensaje = ['mensaje' => "Cliente no registrado en el sistema"];
+			$response = $response->withJson($mensaje);
+		}
+	} catch (PDOException $e) {
+		$mensaje = "No se ha encontrado el cliente";
+		$response = $response->withJson($mensaje);;
 	}
 
 	return $response;
